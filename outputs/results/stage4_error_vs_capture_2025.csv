@@ -1,0 +1,7 @@
+hub,strategy,mae,mae_peak,capture
+HB_WEST,da_forecast,12.124,20.123,0.749
+HB_WEST,gbm_forecast,13.305,22.415,0.721
+HB_WEST,last_week_forecast,24.777,37.419,0.458
+HB_HOUSTON,da_forecast,10.369,18.741,0.733
+HB_HOUSTON,gbm_forecast,10.65,19.204,0.699
+HB_HOUSTON,last_week_forecast,17.855,28.805,0.416

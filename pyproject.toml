@@ -10,6 +10,7 @@ dependencies = [
     "matplotlib",
     "cvxpy",
     "highspy",
+    "scikit-learn",
 ]
 
 [project.optional-dependencies]

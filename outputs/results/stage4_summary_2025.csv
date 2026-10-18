@@ -1,0 +1,11 @@
+hub,strategy,revenue,losing_days,mae,mae_peak,median_abs_err,planned_revenue,capture,per_kw_month
+HB_WEST,perfect_foresight,4732823.394,0,,,,,1.0,3.944
+HB_WEST,da_forecast,3545711.185,11,12.124,20.123,6.547,4137049.583,0.749,2.955
+HB_WEST,gbm_forecast,3413347.648,13,13.305,22.415,7.017,4003720.79,0.721,2.844
+HB_WEST,last_week_forecast,2166901.031,48,24.777,37.419,15.23,4756969.573,0.458,1.806
+HB_WEST,simple_rule,2559980.75,23,,,,,0.541,2.133
+HB_HOUSTON,perfect_foresight,3903237.728,0,,,,,1.0,3.253
+HB_HOUSTON,da_forecast,2862522.861,10,10.369,18.741,5.179,3477838.482,0.733,2.385
+HB_HOUSTON,gbm_forecast,2727628.256,18,10.65,19.204,5.296,3070959.737,0.699,2.273
+HB_HOUSTON,last_week_forecast,1623521.848,57,17.855,28.805,9.721,3917770.444,0.416,1.353
+HB_HOUSTON,simple_rule,1858698.035,52,,,,,0.476,1.549

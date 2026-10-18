@@ -328,3 +328,45 @@ def cumulative_revenue(opt_daily: pd.DataFrame, rule_daily: pd.DataFrame, hubs: 
     fig.tight_layout()
     footnote(fig, ["Solid = perfect foresight, dashed = charge 10:00-14:00 / discharge 18:00-21:00 every day. Steep jumps are scarcity days.", NOTE_RTCB])
     return fig
+
+
+def strategy_comparison(summary: pd.DataFrame, hubs: list[str], strategies: list[str], labels: dict,
+                        benchmark: float | None = None, year: int | None = None):
+    """$/kw-month per strategy, hubs side by side, with % of perfect foresight at each bar end."""
+    style()
+    fig, ax = plt.subplots(figsize=(10, 5.5))
+    height = 0.38
+    y = np.arange(len(strategies))[::-1]  # first strategy on top
+    for i, hub in enumerate(hubs):
+        s = summary[summary["hub"] == hub].set_index("strategy").loc[strategies]
+        offset = (0.5 - i) * height
+        ax.barh(y + offset, s["per_kw_month"], height, color=HUB_COLORS.get(hub), edgecolor=SURFACE,
+                linewidth=1, label=HUB_LABELS.get(hub, hub))
+        for yy, v, cap in zip(y + offset, s["per_kw_month"], s["capture"]):
+            # surface-colored box keeps labels readable where the benchmark line crosses them
+            ax.text(v + 0.04, yy, f"${v:.2f}  ({cap:.0%})", va="center", fontsize=8, color=INK_2, zorder=4,
+                    bbox={"facecolor": SURFACE, "edgecolor": "none", "pad": 1})
+
+    if benchmark:
+        ax.axvline(benchmark, color=INK_2, linewidth=1, linestyle="--", zorder=3)
+        ax.text(benchmark + 0.04, y.max() + 0.62, f"Modo ERCOT fleet 2025 ≈ ${benchmark:.1f}", fontsize=8, color=INK_2)
+
+    ax.set_yticks(y, [labels[s] for s in strategies])
+    ax.set_xlabel("$/kW-month (energy arbitrage, hub prices)")
+    ax.set_xlim(0, summary["per_kw_month"].max() * 1.25)
+    ax.grid(axis="x", color=GRID, linewidth=0.8)
+    ax.set_axisbelow(True)
+    ax.tick_params(length=0)
+    ax.legend(loc="lower right")
+    fig.suptitle(
+        f"What a battery earns depends on what it knows{f' ({year})' if year else ''}",
+        x=0.06, ha="left", fontweight="bold", fontsize=13,
+    )
+    fig.tight_layout()
+    footnote(fig, [
+        "All strategies settle at hourly real-time prices. % = share of perfect-foresight real-time revenue at the same hub.",
+        "Schedules are fixed at midnight using only information available then (day-ahead prices, past real-time prices).",
+        "Modo's index covers the real fleet: ancillary services and nodal prices included, so it is a sanity check, not a like-for-like target.",
+        NOTE_RTCB,
+    ])
+    return fig

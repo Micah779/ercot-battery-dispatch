@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from ercot_bdm.config import BATTERY, Battery
+from ercot_bdm.settle import revenue
 
 
 @dataclass
@@ -83,18 +84,26 @@ class DailyOptimizer:
         )
 
 
-def run_year(hourly: pd.DataFrame, hub: str, price_col: str, battery: Battery = BATTERY):
-    """solve every day for one hub + market. returns (daily summary, hourly dispatch)."""
+def run_year(hourly: pd.DataFrame, hub: str, price_col: str, battery: Battery = BATTERY, settle_col: str | None = None):
+    """solve every day for one hub + market. returns (daily summary, hourly dispatch).
+
+    settle_col: plan on price_col (e.g. a forecast) but get paid at settle_col (e.g. rt_price).
+    left as none, the plan is settled at the prices it was planned on (perfect foresight).
+    """
+    settle_col = settle_col or price_col
     opt = DailyOptimizer(battery)
     df = hourly[hourly["hub"] == hub].sort_values("interval_start")
 
     daily, dispatch = [], []
     for date, day in df.groupby("date", sort=True):
         r = opt.solve_day(day[price_col].to_numpy())
+        settle = day[settle_col].to_numpy()
         daily.append(
             {
                 "date": date,
-                "revenue": r.revenue,
+                "revenue": revenue(r.charge, r.discharge, settle),
+                # what the plan expected to earn on its own prices
+                "planned_revenue": r.revenue,
                 "cycling_cost": r.cycling_cost,
                 "discharged_mwh": r.discharge.sum(),
                 "charged_mwh": r.charge.sum(),
@@ -109,7 +118,8 @@ def run_year(hourly: pd.DataFrame, hub: str, price_col: str, battery: Battery = 
             pd.DataFrame(
                 {
                     "interval_start": day["interval_start"].to_numpy(),
-                    "price": day[price_col].to_numpy(),
+                    "price": settle,
+                    "planned_price": day[price_col].to_numpy(),
                     "charge_mw": r.charge,
                     "discharge_mw": r.discharge,
                     "soc_mwh": r.soc,
@@ -117,10 +127,9 @@ def run_year(hourly: pd.DataFrame, hub: str, price_col: str, battery: Battery = 
             )
         )
 
-    daily = pd.DataFrame(daily).assign(
-        hub=hub, market=price_col.removesuffix("_price"), cycle_cost=battery.cycle_cost
-    )
-    dispatch = pd.concat(dispatch, ignore_index=True).assign(hub=hub, market=price_col.removesuffix("_price"))
+    market = settle_col.removesuffix("_price")
+    daily = pd.DataFrame(daily).assign(hub=hub, market=market, plan=price_col, cycle_cost=battery.cycle_cost)
+    dispatch = pd.concat(dispatch, ignore_index=True).assign(hub=hub, market=market, plan=price_col)
 
     # value of 1 more mwh of storage: soc ceiling and the daily cycle allowance both scale with it
     daily["capacity_value"] = daily["soc_cap_dual"] + battery.max_cycles_per_day * daily["cycle_dual"]

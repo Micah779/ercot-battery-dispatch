@@ -33,3 +33,7 @@ class Battery:
 
 
 BATTERY = Battery()
+
+# reality check: modo energy's ercot bess index, ~$30/kw-yr for 2025 (all revenue streams, real nodes)
+# source: modoenergy.com research, nov 2025 benchmark note. ~ $2.5/kw-month
+MODO_2025_PER_KW_MONTH = 30 / 12
