@@ -1,0 +1,3 @@
+hub,da_mean,rt_mean,rt_max,rt_min,da_neg_hours,rt_neg_hours,rt_neg_hours_any_interval,rt_neg_hours_night,rt_neg_hours_10to4
+HB_HOUSTON,34.47,33.05,1560.67,-163.63,2,142,188,11,94
+HB_WEST,33.74,32.88,1963.41,-30.62,341,638,782,100,338

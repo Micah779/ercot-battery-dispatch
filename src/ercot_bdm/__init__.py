@@ -1,0 +1,1 @@
+"""ERCOT battery dispatch model."""
