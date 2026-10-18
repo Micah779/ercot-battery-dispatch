@@ -19,6 +19,10 @@ AXIS = "#c3c2b7"
 HUB_COLORS = {"HB_WEST": "#eb6834", "HB_HOUSTON": "#2a78d6"}
 HUB_LABELS = {"HB_WEST": "West hub", "HB_HOUSTON": "Houston hub"}
 
+# battery actions take the next categorical slots (hubs hold slots 1-2)
+CHARGE_COLOR = "#1baf7a"
+DISCHARGE_COLOR = "#eda100"
+
 # one-hue sequential ramp (blue, light -> dark) for magnitudes
 BLUES = LinearSegmentedColormap.from_list(
     "blues", ["#cde2fb", "#86b6ef", "#3987e5", "#256abf", "#184f95", "#0d366b"]
@@ -160,4 +164,93 @@ def negative_hours(df: pd.DataFrame, hubs: list[str], price_col: str = "rt_price
         alt = ", ".join(f"{HUB_LABELS.get(h, h)} {int(any_neg.get(h, 0))}" for h in hubs)
         notes.insert(0, f"Negative hour = hourly average of the four 15-minute prices below $0. Counting any negative interval instead: {alt}.")
     footnote(fig, notes)
+    return fig
+
+
+def monthly_revenue(daily: pd.DataFrame, hubs: list[str], market: str = "rt", year: int | None = None):
+    """perfect-foresight revenue per month, hubs side by side."""
+    style()
+    d = daily[daily["market"] == market].copy()
+    d["month"] = pd.to_datetime(d["date"]).dt.month
+    by_month = d.groupby(["month", "hub"])["revenue"].sum().unstack("hub").reindex(range(1, 13)) / 1e3
+
+    fig, ax = plt.subplots(figsize=(10, 4.5))
+    width = 0.4
+    for i, hub in enumerate(hubs):
+        offset = (i - (len(hubs) - 1) / 2) * width
+        total = by_month[hub].sum() / 1e3
+        ax.bar(np.arange(12) + offset, by_month[hub], width, color=HUB_COLORS.get(hub),
+               edgecolor=SURFACE, linewidth=1, label=f"{HUB_LABELS.get(hub, hub)} (${total:.1f}M/yr)")
+
+    ax.set_xticks(range(12), MONTHS)
+    ax.set_ylabel("Revenue ($ thousands)")
+    ax.grid(axis="y", color=GRID, linewidth=0.8)
+    ax.set_axisbelow(True)
+    ax.tick_params(length=0)
+    ax.legend(loc="upper left")
+    name = MARKET_NAMES[f"{market}_price"]
+    fig.suptitle(
+        f"Perfect-foresight battery revenue by month, {name} prices{f' ({year})' if year else ''}",
+        x=0.06, ha="left", fontweight="bold", fontsize=13,
+    )
+    fig.tight_layout()
+    footnote(fig, [
+        "100 MW / 200 MWh battery, 85% round-trip efficiency, max 1 cycle/day, starts and ends each day empty.",
+        "Upper bound: assumes every hourly price is known in advance. Energy arbitrage only (no ancillary services).",
+        NOTE_RTCB,
+    ])
+    return fig
+
+
+def dispatch_day(dispatch: pd.DataFrame, hub: str, market: str, date):
+    """one day of optimal dispatch: price, charge/discharge, state of charge."""
+    style()
+    day = dispatch[(dispatch["hub"] == hub) & (dispatch["market"] == market)
+                   & (dispatch["interval_start"].dt.date == pd.Timestamp(date).date())]
+    hours = day["interval_start"].dt.hour.to_numpy()
+    n = len(day)
+    # x axis is hour boundaries: hour t spans x = t to t + 1
+    x = np.arange(n)
+    edges = np.arange(n + 1)
+
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(9, 8), sharex=True,
+                                        gridspec_kw={"height_ratios": [1.2, 1, 1]})
+    # price is flat within each hour, so draw it as a step across the hour
+    price = day["price"].to_numpy()
+    ax1.step(edges, np.append(price, price[-1]), where="post", color=HUB_COLORS.get(hub, INK), linewidth=2)
+    ax1.set_ylabel("$/MWh")
+    ax1.set_title("Price")
+
+    # bars fill their hour; charge drawn below zero, discharge above
+    ax2.bar(x, -day["charge_mw"], 0.9, align="edge", color=CHARGE_COLOR, label="Charge")
+    ax2.bar(x, day["discharge_mw"], 0.9, align="edge", color=DISCHARGE_COLOR, label="Discharge")
+    ax2.axhline(0, color=AXIS, linewidth=1)
+    ax2.set_ylabel("MW")
+    ax2.set_title("Battery power")
+    ax2.legend(loc="upper left", ncol=2)
+
+    # soc is an end-of-hour value: 0 at the start of the day, soc_t at the end of hour t
+    # straight lines between boundaries = energy ramps in during a charging hour
+    soc = np.insert(day["soc_mwh"].to_numpy(), 0, 0.0)
+    ax3.fill_between(edges, soc, color="#86b6ef", alpha=0.6, linewidth=0)
+    ax3.plot(edges, soc, color="#256abf", linewidth=2)
+    ax3.set_ylabel("MWh")
+    ax3.set_title("Stored energy")
+    ax3.set_xticks(x[::3], [f"{h}:00" for h in hours[::3]])
+    ax3.set_xlim(0, n)
+    ax3.set_xlabel("Hour (Central)")
+
+    for ax in (ax1, ax2, ax3):
+        ax.grid(axis="y", color=GRID, linewidth=0.8)
+        ax.set_axisbelow(True)
+        ax.tick_params(length=0)
+
+    rev = float((day["price"] * (day["discharge_mw"] - day["charge_mw"])).sum())
+    name = MARKET_NAMES[f"{market}_price"]
+    fig.suptitle(
+        f"A typical day of optimal dispatch: {HUB_LABELS.get(hub, hub)}, {pd.Timestamp(date):%b %-d, %Y}",
+        x=0.06, ha="left", fontweight="bold", fontsize=13,
+    )
+    fig.tight_layout()
+    footnote(fig, [f"Perfect foresight on hourly {name} prices. Revenue that day: ${rev:,.0f} (median day of the year)."])
     return fig

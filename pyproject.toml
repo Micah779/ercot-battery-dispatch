@@ -8,7 +8,12 @@ dependencies = [
     "pyarrow",
     "duckdb",
     "matplotlib",
+    "cvxpy",
+    "highspy",
 ]
+
+[project.optional-dependencies]
+dev = ["pytest"]
 
 [build-system]
 requires = ["setuptools>=61"]

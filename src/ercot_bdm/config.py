@@ -29,6 +29,7 @@ class Battery:
     energy_mwh: float = 200.0  # usable capacity (2-hour battery)
     round_trip_eff: float = 0.85  # energy out / energy in
     max_cycles_per_day: float = 1.0  # full discharges allowed per day
+    cycle_cost: float = 0.0  # $ per mwh discharged, a stand-in for degradation (0 = free cycling)
 
 
 BATTERY = Battery()

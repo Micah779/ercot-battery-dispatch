@@ -58,6 +58,14 @@ Each stage ends with a working result and a post.
 
 Naming what we simplified is part of the point.
 
+## Model simplifications (state these with every result)
+1. **Each day starts and ends empty.** No carrying energy overnight into the next morning. Slightly understates revenue.
+2. **Hourly real-time prices**, not the actual 15-minute settlement. Averaging smooths intra-hour spikes, so RT revenue is understated.
+3. **Energy arbitrage only.** No ancillary services, which are a big part of real ERCOT battery revenue.
+4. **Price taker.** The battery's charging and discharging don't move the price. Fine for one 100 MW battery, but ERCOT has roughly 15 GW of batteries, which is why real spreads are shrinking.
+5. **Hub price, not node price.** A real battery settles at its own node, which can be much better or worse than the hub, especially in congested West Texas.
+6. **No degradation by default.** Checked with a cycling-cost sensitivity ($5 and $10/MWh discharged): dispatch barely changes.
+
 ## What "done" looks like
 One headline number per strategy, in a single table:
 

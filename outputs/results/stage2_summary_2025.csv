@@ -1,0 +1,5 @@
+hub,market,revenue,discharged_mwh,cycles,days_full_cycle,capacity_value,simultaneous_hours,per_kw_month,top10_days_share
+HB_HOUSTON,da,3477838.482,67302.674,365.0,365,15351.311,0,2.898,0.158
+HB_HOUSTON,rt,3903237.728,67118.284,364.0,364,14806.139,0,3.253,0.184
+HB_WEST,da,4137049.583,67302.674,365.0,365,18455.023,0,3.448,0.149
+HB_WEST,rt,4732823.394,67302.674,365.0,365,18379.78,0,3.944,0.201
