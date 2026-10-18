@@ -254,3 +254,77 @@ def dispatch_day(dispatch: pd.DataFrame, hub: str, market: str, date):
     fig.tight_layout()
     footnote(fig, [f"Perfect foresight on hourly {name} prices. Revenue that day: ${rev:,.0f} (median day of the year)."])
     return fig
+
+
+def _hours_label(hours) -> str:
+    """(10, 11, 12, 13) -> '10:00-14:00'."""
+    return f"{min(hours)}:00-{max(hours) + 1}:00"
+
+
+def capture_by_month(capture: pd.DataFrame, hubs: list[str], market: str = "rt", year: int | None = None,
+                     rule_label: str = "", overall: dict | None = None):
+    """share of perfect-foresight revenue the rule captured, per month, hubs side by side."""
+    style()
+    c = capture[capture["market"] == market].pivot(index="month", columns="hub", values="capture").reindex(range(1, 13))
+
+    fig, ax = plt.subplots(figsize=(10, 4.5))
+    width = 0.4
+    for i, hub in enumerate(hubs):
+        offset = (i - (len(hubs) - 1) / 2) * width
+        label = HUB_LABELS.get(hub, hub)
+        if overall:
+            label += f" ({overall[hub]:.0%} for the year)"
+        ax.bar(np.arange(12) + offset, c[hub] * 100, width, color=HUB_COLORS.get(hub),
+               edgecolor=SURFACE, linewidth=1, label=label)
+
+    ax.axhline(100, color=AXIS, linewidth=1, linestyle="--")
+    ax.text(11.6, 101, "perfect foresight", ha="right", va="bottom", fontsize=8, color=MUTED)
+    ax.set_xticks(range(12), MONTHS)
+    ax.set_ylabel("% of perfect-foresight revenue")
+    ax.set_ylim(min(0, np.nanmin(c.values) * 100 - 5), 112)
+    ax.grid(axis="y", color=GRID, linewidth=0.8)
+    ax.set_axisbelow(True)
+    ax.tick_params(length=0)
+    ax.legend(loc="upper left", ncol=2)
+    name = MARKET_NAMES[f"{market}_price"]
+    fig.suptitle(
+        f"How much a fixed schedule captures, by month ({name} prices{f', {year}' if year else ''})",
+        x=0.06, ha="left", fontweight="bold", fontsize=13,
+    )
+    fig.tight_layout()
+    footnote(fig, [
+        f"Rule: {rule_label}, every day, ignoring prices. Same battery and limits as the optimizer.",
+        "Hours are hour beginning, Central time. Perfect foresight = Stage 2 optimizer on the same prices.",
+        NOTE_RTCB,
+    ])
+    return fig
+
+
+def cumulative_revenue(opt_daily: pd.DataFrame, rule_daily: pd.DataFrame, hubs: list[str], market: str = "rt",
+                       year: int | None = None):
+    """running total through the year: perfect foresight (solid) vs the rule (dashed), per hub."""
+    style()
+    fig, ax = plt.subplots(figsize=(10, 5))
+    for hub in hubs:
+        for daily, ls, name in ((opt_daily, "-", "perfect foresight"), (rule_daily, "--", "simple rule")):
+            d = daily[(daily["hub"] == hub) & (daily["market"] == market)].sort_values("date")
+            x = pd.to_datetime(d["date"])
+            y = d["revenue"].cumsum() / 1e6
+            ax.plot(x, y, ls, color=HUB_COLORS.get(hub), linewidth=2)
+            # direct label at the line end
+            ax.annotate(f"{HUB_LABELS.get(hub, hub)}, {name}: ${y.iloc[-1]:.1f}M", (x.iloc[-1], y.iloc[-1]),
+                        xytext=(6, 0), textcoords="offset points", va="center", fontsize=9, color=INK_2)
+
+    ax.set_ylabel("Cumulative revenue ($ millions)")
+    ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter("%b"))
+    ax.grid(axis="y", color=GRID, linewidth=0.8)
+    ax.set_axisbelow(True)
+    ax.tick_params(length=0)
+    name = MARKET_NAMES[f"{market}_price"]
+    fig.suptitle(
+        f"Perfect foresight vs. a fixed schedule over the year ({name} prices{f', {year}' if year else ''})",
+        x=0.06, ha="left", fontweight="bold", fontsize=13,
+    )
+    fig.tight_layout()
+    footnote(fig, ["Solid = perfect foresight, dashed = charge 10:00-14:00 / discharge 18:00-21:00 every day. Steep jumps are scarcity days.", NOTE_RTCB])
+    return fig

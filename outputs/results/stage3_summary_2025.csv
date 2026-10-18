@@ -1,0 +1,5 @@
+hub,market,perfect_foresight,rule,rule_capture,rule_per_kw_month,rule_losing_days,best_window,best_window_capture,days_under_50pct
+HB_WEST,rt,4732823.394,2559980.75,0.541,2.133,23,"charge 9:00-13:00, discharge 19:00-22:00",0.558,140
+HB_WEST,da,4137049.583,2757288.221,0.666,2.298,4,"charge 9:00-13:00, discharge 18:00-21:00",0.672,68
+HB_HOUSTON,rt,3903237.728,1858698.035,0.476,1.549,52,"charge 8:00-12:00, discharge 18:00-21:00",0.525,167
+HB_HOUSTON,da,3477838.482,2096125.655,0.603,1.747,10,"charge 8:00-12:00, discharge 18:00-21:00",0.646,114
